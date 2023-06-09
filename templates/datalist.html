@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+
+{% block body %}
+<div class="container">
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Valor</th>
+                    <th>Pay</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for despesa in despesas %}
+                <tr>
+                    <td>
+                        {% if despesa.usuario == 'Mara' %}
+                            <i class="fas fa-female"></i>
+                        {% elif despesa.usuario == 'Leandro' %}
+                            <i class="fas fa-male"></i>
+                        {% endif %}
+                        {{ despesa.data }}
+                    </td>
+                    <td>{{ despesa.descricao }}{{ despesa.chave }}</td>
+                    <td>{{ despesa.categoria }}</td>
+                    <td>R${{ despesa.valor }}</td>
+                    <td>{{ despesa.pagamento }}</td>
+                    <td>
+                        <a href="/{{ despesa.id }}/edit" class="btn btn-success"><i class="fas fa-edit"></i></a>
+                        <a href="/{{ despesa.id }}/delete" class="btn btn-danger"><i class="fas fa-trash-alt"></i></a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+{% endblock %}

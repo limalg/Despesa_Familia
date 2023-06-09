@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div class="container">
+    <canvas id="chart1"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    window.onload = function () {
+        var categorias = {};
+        {% for despesa in despesas %}
+            var categoria = "{{ despesa.categoria }}";
+            var valor = {{ despesa.valor }};
+
+            if (categorias.hasOwnProperty(categoria)) {
+                categorias[categoria] += valor;
+            } else {
+                categorias[categoria] = valor;
+            }
+        {% endfor %}
+
+        var dataPoints = [];
+        for (var categoria in categorias) {
+            dataPoints.push({ label: categoria, y: categorias[categoria] });
+        }
+
+        var ctx = document.getElementById('chart1').getContext('2d');
+        var chart1 = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: dataPoints.map(data => data.label),
+                datasets: [{
+                    data: dataPoints.map(data => data.y),
+                    backgroundColor: ['red', 'green', 'blue', 'orange', 'purple', 'yellow', 'pink', 'gray', 'brown', 'black', 'white', 'turquoise', 'violet']
+
+                }]
+            },
+            options: {
+                title: {
+                    display: true,
+                    text: 'Total por Categoria'
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
