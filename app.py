@@ -288,8 +288,8 @@ def records_month_atual():
         return []
 
 
-if __name__ == '__main__':
+#if __name__ == '__main__':
     #app.run(debug=True)
-    app.run()
+#    app.run()
     #app.run(host='0.0.0.0')
 
