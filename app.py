@@ -1,10 +1,18 @@
-import requests
-from flask import Flask, render_template, request, redirect
+#import requests
+from flask import Flask, render_template, request, redirect,session,url_for
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import pandas as pd
+import pyrebase
+#import json
+from functools import wraps
+import os
+#import matplotlib.pyplot as plt
 
 app = Flask(__name__)
+
+#secret key for the session
+app.secret_key = os.urandom(24)
 
 # Variável Global
 categorias = [
@@ -27,19 +35,65 @@ categorias = [
     'Facily',
     'Faxina'
 ]
-"""
-@app.before_first_request
-def create_table():
-    db.create_all()
-"""
+
+config = {
+            "apiKey": "AIzaSyB6CP8UVIEfifzmXvPepPlZShRIaJa6CL4",
+            "authDomain": "limalg_familia.firebaseapp.com",
+            "databaseURL": "https://casa-9085b-default-rtdb.firebaseio.com",
+            "projectId": "casa-9085b",
+            "storageBucket": "casa-9085b.appspot.com",
+            "messagingSenderId": "SEU_SENDER_ID",
+            "appId": "1:128158421861:android:56fe3df9216c7d0b71078c"
+}
+
+firebase = pyrebase.initialize_app(config)
+auth = firebase.auth()
+db = firebase.database()
+
+#decorator to protect routes
+def isAuthenticated(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        #check for the variable that pyrebase creates
+        if not auth.current_user != None:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        try:
+            user = auth.sign_in_with_email_and_password(email, password)
+            #set the session
+            user_id = user['idToken']
+            user_email = email
+            session['usr'] = user_id
+            session["email"] = user_email
+            return redirect("/")
+        except Exception as e:
+            print(e)
+            return render_template('login.html', message='Credenciais inválidas')
+
+    return render_template('login.html')
+
+#logout route
+@app.route("/logout")
+def logout():
+    #remove the token setting the user to None
+    auth.current_user = None
+    session.clear()
+    return redirect("/")
 
 @app.route('/create', methods=['GET', 'POST'])
+@isAuthenticated
 def create():
     if request.method == 'GET':
         return render_template('createpage.html', categorias=categorias)
 
     if request.method == 'POST':
-        
         usuario = request.form['usuario']
         pagamento = request.form['pagamento']
         data = request.form['data']
@@ -48,7 +102,6 @@ def create():
         valor = request.form['valor']
         parcela = request.form['parcela']
         tipo_despesa = request.form['tipo_despesa']
-        
 
         if int(parcela) > 1:
             data = datetime.strptime(data, '%Y-%m-%d')
@@ -64,8 +117,8 @@ def create():
                     'parcela': num,
                     'usuario': usuario,
                     'pagamento': pagamento,
-                    'id':True,
-                    'tipo_despesa':tipo_despesa
+                    'id': True,
+                    'tipo_despesa': tipo_despesa
                 }
                 create_record(despesa)
         else:
@@ -77,25 +130,29 @@ def create():
                 'parcela': parcela,
                 'usuario': usuario,
                 'pagamento': pagamento,
-                'id':True,
-                'tipo_despesa':tipo_despesa
+                'id': True,
+                'tipo_despesa': tipo_despesa
             }
             create_record(despesa)
         return redirect('/')
 
 
 @app.route('/')
+@isAuthenticated
 def presentation():
-    despesas = retrieve_records()
+    despesas = retrieve_records_month()
     return render_template('presentation.html', despesas=despesas)
 
+
 @app.route('/list')
+@isAuthenticated
 def retrieve_list():
     despesas = retrieve_records()
     return render_template('datalist.html', despesas=despesas)
 
 
 @app.route('/<string:id>/edit', methods=['GET', 'POST'])
+@isAuthenticated
 def update(id):
     despesa = retrieve_record(id)
 
@@ -117,6 +174,7 @@ def update(id):
 
 
 @app.route('/<string:id>/delete', methods=['GET', 'POST'])
+@isAuthenticated
 def delete(id):
     despesa = retrieve_record(id)
 
@@ -128,121 +186,110 @@ def delete(id):
 
     return render_template('delete.html')
 
-@app.route('/dashboard')
-def dashboard():
-    #despesas = retrieve_records()
-    despesas = records_month_atual()
-    return render_template('dashboard.html', despesas=despesas)
 
-@app.route('/dashboard1')
-def dashboard1():
-    despesas = retrieve_records_month()
-    #item_selecionado = request.args.get('link_anomes')
-    #item_selecionado = request.form['filtroAnoMes']
-    #print(item_selecionado)
-    return render_template('dashboard1.html', despesas=despesas)
+@app.route('/dashboard')
+@isAuthenticated
+def dashboard():
+    despesas = retrieve_records_month() 
+    return render_template('dashboard.html', despesas=despesas)
 
 
 ######################################################
 # Funções auxiliares
 ######################################################
-link = 'https://casa-9085b-default-rtdb.firebaseio.com/'
+
 
 # Função para criar um novo registro
 def create_record(data):
-    response = requests.post(f'{link}despesa.json', json=data)
-    if response.status_code == 200:
-        record_id = response.json()['name']
-        update_record(record_id, {'id': record_id})
-        print('Novo registro criado com sucesso.')
-    else:
-        print('Erro ao criar registro:', response.text)
+    response = db.child("despesa").push(data)
+    record_id = response['name']
+    update_record(record_id, {'id': record_id})
+    print('Novo registro criado com sucesso.')
 
 
 # Função para recuperar todos os registros
 def retrieve_records():
-    response = requests.get(f'{link}despesa.json')
-    if response.status_code == 200:
-        data = response.json()
-        return list(data.values()) if data else []
+    response = db.child("despesa").get()
+    if response.val().keys():
+        return list(response.val().values())
     else:
-        print('Erro ao recuperar registros:', response.text)
+        print('Erro ao recuperar registros.')
         return []
 
 
 # Função para recuperar um registro específico
 def retrieve_record(id):
-    response = requests.get(f'{link}despesa/{id}.json')
-    if response.status_code == 200:
-        return response.json()
+    response = db.child("despesa").child(id).get()
+    if response.val():
+        return response.val()
     else:
-        print(f'Erro ao recuperar registro com o ID {id}:', response.text)
+        print(f'Erro ao recuperar registro com o ID {id}.')
         return None
 
 
 # Função para atualizar um registro
 def update_record(id, data):
-    response = requests.patch(f'{link}despesa/{id}.json', json=data)
-    #response = requests.put(f'{link}despesa/{id}.json', json=data)
-    if response.status_code == 200:
-        print(f'Registro com o ID {id} atualizado com sucesso.')
-    else:
-        print(f'Erro ao atualizar registro com o ID {id}:', response.text)
+    db.child("despesa").child(id).update(data)
+    print(f'Registro com o ID {id} atualizado com sucesso.')
 
 
 # Função para excluir um registro
 def delete_record(id):
-    response = requests.delete(f'{link}despesa/{id}.json')
-    if response.status_code == 200:
-        print(f'Registro com o ID {id} excluído com sucesso.')
-    else:
-        print(f'Erro ao excluir registro com o ID {id}:', response.text)
+    db.child("despesa").child(id).remove()
+    print(f'Registro com o ID {id} excluído com sucesso.')
+
 
 # Função para recuperar os registros do Mês Atual
 def retrieve_records_month():
-    response = requests.get(f'{link}despesa.json')
-    if response.status_code == 200:
-        data = response.json()
+    response = db.child("despesa").get()
+    if response.val():
+        data = response.val()
         df = pd.DataFrame(data)
         df = df.transpose()
         df['data'] = pd.to_datetime(df['data'])
-        df['anomes'] = df['data'].dt.strftime('%Y%m' )
-        df['ano'] = df['data'].dt.strftime('%Y' )
-        df['mes'] = df['data'].dt.strftime('%m' )
-        df['dia'] = df['data'].dt.strftime('%d' )
+        df['ano'] = df['data'].dt.strftime('%Y')
+        df['mes'] = df['data'].dt.strftime('%m')
+        df['dia'] = df['data'].dt.strftime('%d')
+        df['anomes'] = df['data'].dt.strftime('%Y%m')
+        df['anomes'] = df['anomes'].astype('int')
         df['valor'] = df['valor'].astype(float)
         df['dia'] = df['dia'].astype('Int64')
-        #df = df.loc[df['anomes'] == id_anomes]
-        # Agrupar pelas colunas 'hoje' e 'nome' e redefinir o índice
-        #df = df.groupby(['anomes', 'categoria']).agg({'valor':sum}).reset_index()
-        df = df[['anomes','ano','mes','dia','data','valor','categoria','descricao','pagamento','parcela' ,'tipo_despesa', 'usuario', 'id']]
+        df = df[['anomes', 'ano', 'mes', 'dia', 'data', 'valor', 'categoria', 'descricao', 'pagamento', 'parcela',
+                 'tipo_despesa', 'usuario', 'id']]
         df = df.reset_index(drop=True)
         #print(df)
         return df
     else:
-        print('Erro ao recuperar registros:', response.text)
+        print('Erro ao recuperar registros.')
         return []
 
-# Função para recuperar os registros do Mês Atual
+
+# Função para recuperar os registros do Mês Atual (versão do autor)
 def records_month_atual():
-    response = requests.get(f'{link}despesa.json')
-    if response.status_code == 200:
-        data = response.json()
+    response = db.child("despesa").get()
+    if response.val():
+        data = response.val()
         df = pd.DataFrame(data)
         df = df.transpose()
         df['data'] = pd.to_datetime(df['data'])
         df['anomes'] = df['data'].dt.strftime('%Y%m' )
-        df['mes'] = df['data'].dt.strftime('%B')
+        df['ano'] = df['data'].dt.strftime('%Y')
+        df['mes'] = df['data'].dt.strftime('%m')
+        df['dia'] = df['data'].dt.strftime('%d')
         df['valor'] = df['valor'].astype(float)
+        df['dia'] = df['dia'].astype('Int64')
         current_month = pd.to_datetime('today').strftime('%Y%m')
         df = df.loc[df['anomes'] == current_month]
-        # Agrupar pelas colunas 'hoje' e 'nome' e redefinir o índice
-        df = df.groupby(['categoria','mes','tipo_despesa','usuario','anomes']).agg({'valor':sum}).reset_index()
+        df = df.reset_index(drop=True)
+        #print(df)
         return df
     else:
-        print('Erro ao recuperar registros:', response.text)
+        print('Erro ao recuperar registros.')
         return []
+
 
 if __name__ == '__main__':
     #app.run(debug=True)
     app.run()
+    #app.run(host='0.0.0.0')
+
