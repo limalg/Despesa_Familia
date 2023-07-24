@@ -1,17 +1,36 @@
 {% extends 'base.html' %}
 
-
 {% block body %}
 <div class="container">
     <div class="table-responsive">
-        <table class="table table-sm">
+        <table class="table table-striped" id="dataTable" style="width:100%">
             <thead>
                 <tr>
-                    <th>Data</th>
-                    <th>Descrição</th>
-                    <th>Categoria</th>
-                    <th>Valor</th>
-                    <th>Pay</th>
+                    <th>
+                        <a href="#" class="sort" data-column="data">
+                            <i class="fas fa-sort"></i> Data
+                        </a>
+                    </th>
+                    <th>
+                        <a href="#" class="sort" data-column="descricao">
+                            <i class="fas fa-sort"></i> Descrição
+                        </a>
+                    </th>
+                    <th>
+                        <a href="#" class="sort" data-column="categoria">
+                            <i class="fas fa-sort"></i> Categoria
+                        </a>
+                    </th>
+                    <th>
+                        <a href="#" class="sort" data-column="valor">
+                            <i class="fas fa-sort"></i> Valor
+                        </a>
+                    </th>
+                    <th>
+                        <a href="#" class="sort" data-column="pagamento">
+                            <i class="fas fa-sort"></i> Pay
+                        </a>
+                    </th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -20,9 +39,9 @@
                 <tr>
                     <td>
                         {% if despesa.usuario == 'Mara' %}
-                            <i class="fas fa-female"></i>
+                            <i class="bx bx-female"></i>
                         {% elif despesa.usuario == 'Leandro' %}
-                            <i class="fas fa-male"></i>
+                            <i class="bx bx-male"></i>
                         {% endif %}
                         {{ despesa.data }}
                     </td>
@@ -31,8 +50,8 @@
                     <td>R${{ despesa.valor }}</td>
                     <td>{{ despesa.pagamento }}</td>
                     <td>
-                        <a href="/{{ despesa.id }}/edit" class="btn btn-success"><i class="fas fa-edit"></i></a>
-                        <a href="/{{ despesa.id }}/delete" class="btn btn-danger"><i class="fas fa-trash-alt"></i></a>
+                        <a href="/{{ despesa.id }}/edit" class="btn btn-success"><i class="bx bx-edit"></i></a>
+                        <a href="/{{ despesa.id }}/delete" class="btn btn-danger"><i class="bx bx-trash"></i></a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -41,5 +60,33 @@
     </div>
 </div>
 
+<!-- Inclua o jQuery e o DataTables -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Inicialize o DataTables com estilo do Bootstrap 5
+        var dataTable = $('#dataTable').DataTable({
 
+        });
+
+        // Adicione o comportamento de classificação quando um ícone for clicado
+        $('.sort').click(function(e) {
+            e.preventDefault();
+
+            // Obtenha a coluna a ser classificada a partir do atributo data-column
+            var column = $(this).data('column');
+
+            // Verifique se a coluna já está classificada de forma ascendente
+            if (dataTable.order()[0][0] === column && dataTable.order()[0][1] === 'asc') {
+                // Se sim, classifique a coluna de forma descendente
+                dataTable.order([[column, 'desc']]).draw();
+            } else {
+                // Caso contrário, classifique a coluna de forma ascendente
+                dataTable.order([[column, 'asc']]).draw();
+            }
+        });
+    });
+</script>
 {% endblock %}
