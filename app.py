@@ -253,7 +253,7 @@ def retrieve_records_month():
         df['anomes'] = df['data'].dt.strftime('%Y%m')
         df['anomes'] = df['anomes'].astype('int')
         df['valor'] = df['valor'].astype(float)
-        df['dia'] = df['dia'].astype('Int64')
+        df['dia'] = df['dia'].astype('int')
         df = df[['anomes', 'ano', 'mes', 'dia', 'data', 'valor', 'categoria', 'descricao', 'pagamento', 'parcela',
                  'tipo_despesa', 'usuario', 'id']]
         df = df.reset_index(drop=True)
@@ -277,7 +277,7 @@ def records_month_atual():
         df['mes'] = df['data'].dt.strftime('%m')
         df['dia'] = df['data'].dt.strftime('%d')
         df['valor'] = df['valor'].astype(float)
-        #df['dia'] = df['dia'].astype('Int64')
+        df['dia'] = df['dia'].astype('int')
         current_month = pd.to_datetime('today').strftime('%Y%m')
         df = df.loc[df['anomes'] == current_month]
         df = df.reset_index(drop=True)
