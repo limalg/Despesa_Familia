@@ -1,13 +1,10 @@
-#import requests
 from flask import Flask, render_template, request, redirect,session,url_for
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import pyrebase
-#import json
 from functools import wraps
 import os
-#import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 
@@ -37,14 +34,15 @@ categorias = [
 ]
 
 config = {
-            "apiKey": "AIzaSyB6CP8UVIEfifzmXvPepPlZShRIaJa6CL4",
-            "authDomain": "limalg_familia.firebaseapp.com",
-            "databaseURL": "https://casa-9085b-default-rtdb.firebaseio.com",
-            "projectId": "casa-9085b",
-            "storageBucket": "casa-9085b.appspot.com",
-            "messagingSenderId": "SEU_SENDER_ID",
-            "appId": "1:128158421861:android:56fe3df9216c7d0b71078c"
+    "apiKey": os.environ.get("API_KEY"),
+    "authDomain": os.environ.get("AUTH_DOMAIN"),
+    "databaseURL": os.environ.get("DATABASE_URL"),
+    "projectId": os.environ.get("PROJECT_ID"),
+    "storageBucket": os.environ.get("STORAGE_BUCKET"),
+    "messagingSenderId": os.environ.get("MESSAGING_SENDER_ID"),
+    "appId": os.environ.get("APP_ID")
 }
+
 
 firebase = pyrebase.initialize_app(config)
 auth = firebase.auth()
@@ -253,7 +251,7 @@ def retrieve_records_month():
         df['anomes'] = df['data'].dt.strftime('%Y%m')
         df['anomes'] = df['anomes'].astype('int')
         df['valor'] = df['valor'].astype(float)
-        df['dia'] = df['dia'].astype('int')
+        df['dia'] = df['dia'].astype('Int64')
         df = df[['anomes', 'ano', 'mes', 'dia', 'data', 'valor', 'categoria', 'descricao', 'pagamento', 'parcela',
                  'tipo_despesa', 'usuario', 'id']]
         df = df.reset_index(drop=True)
@@ -277,7 +275,7 @@ def records_month_atual():
         df['mes'] = df['data'].dt.strftime('%m')
         df['dia'] = df['data'].dt.strftime('%d')
         df['valor'] = df['valor'].astype(float)
-        df['dia'] = df['dia'].astype('int')
+        df['dia'] = df['dia'].astype('Int64')
         current_month = pd.to_datetime('today').strftime('%Y%m')
         df = df.loc[df['anomes'] == current_month]
         df = df.reset_index(drop=True)
@@ -288,8 +286,7 @@ def records_month_atual():
         return []
 
 
-#if __name__ == '__main__':
+if __name__ == '__main__':
     #app.run(debug=True)
-#    app.run()
-    #app.run(host='0.0.0.0')
+    app.run()
 
