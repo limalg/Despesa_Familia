@@ -251,7 +251,7 @@ def retrieve_records_month():
         df['anomes'] = df['data'].dt.strftime('%Y%m')
         #df['anomes'] = df['anomes'].astype('int')
         df['valor'] = df['valor'].astype(float)
-        df['dia'] = df['dia'].astype('int')
+        #df['dia'] = df['dia'].astype('int')
         df = df[['anomes', 'ano', 'mes', 'dia', 'data', 'valor', 'categoria', 'descricao', 'pagamento', 'parcela',
                  'tipo_despesa', 'usuario', 'id']]
         df = df.reset_index(drop=True)
