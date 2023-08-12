@@ -1,50 +1,81 @@
 {% extends 'base.html' %}
 
 {% block body %}
+
 <div class="container">
-    <div class="row ">
-        <div class="col btn btn-secondary">Mês: <span id="numero_mes"></span></div>    
-        <div class="col btn btn-danger">Gasto: R$<span id="gasto_mes"></span></div>
-        <div class="col btn btn-success">Crédito: R$<span id="credito_mes"></span></div>
-        <div class="col btn btn-warning">Saldo: R$<span id="saldo_mes"></span></div>
-    </div>
     <div class="row">
-        <div class="col">
-            <label for="ano_select">Filtro Ano:</label>
-            <select id="ano_select">
-                {% for ano in despesas['ano'].unique() %}
-                <option {% if ano == current_year %}selected{% endif %}>{{ ano }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col">
-            <label for="mes_select">Filtro Mês:</label>
-            <select id="mes_select">
-                {% for mes in despesas['mes'].unique() %}
-                <option {% if mes == current_month %}selected{% endif %}>{{ mes }}</option>
-                {% endfor %}
-            </select>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col">
-            <div id="chart1"></div>
-        </div>
-        <div class="col">
-            <div id="chart2"></div>
-        </div>
-    </div>
-    <div class="row">
-        <div id="chart3"></div>
+        
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col btn btn-secondary">Mês: <span id="numero_mes"></span></div>
+                        <div class="col btn btn-danger">Gasto: R$<span id="gasto_mes"></span></div>
+                        <div class="col btn btn-success">Crédito: R$<span id="credito_mes"></span></div>
+                        <div class="col btn btn-warning">Saldo: R$<span id="saldo_mes"></span></div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="ano_select">Filtro Ano:</label>
+                                <select id="ano_select" class="form-control">
+                                    {% for ano in despesas['ano'].unique() %}
+                                    <option {% if ano == current_year %}selected{% endif %}>{{ ano }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="mes_select">Filtro Mês:</label>
+                                <select id="mes_select" class="form-control">
+                                    {% for mes in mesesDisponiveis %}
+                                    <option {% if mes == current_month %}selected{% endif %}>{{ mes }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="categoria_select">Categoria:</label>
+                                <select id="categoria_select" class="form-control">
+                                    <option> </option>
+                                    {% for categoria in categoriasDisponiveis %}
+                                    <option>{{ categoria }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col">
+                            <div id="chart1"></div>
+                        </div>
+                        <div class="col">
+                            <div id="chart2"></div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div id="chart3"></div>
+                    </div>
+                </div>
+            </div>
+       
     </div>
 </div>
 
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<!-- Adicione as bibliotecas do Google Charts -->
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 <script>
     var current_year = new Date().getFullYear();
     var current_month = new Date().getMonth() + 1;
 
-    window.onload = function() {
+    google.charts.load('current', {'packages':['corechart']});
+    google.charts.setOnLoadCallback(drawCharts);
+
+    function drawCharts() {
         var despesas = {{ despesas.to_json(orient='records') | safe }};
         
         function filtrarDados(ano, mes) {
@@ -55,44 +86,39 @@
             return despesas.filter(item => item.ano === ano && item.mes === mes && item.tipo_despesa == 'credito');
         }
 
-        function gerarGrafico1(filtro_ano, filtro_mes) {
+        function gerarGrafico1(filtro_ano, filtro_mes, filtro_categoria) {
             var filtro_despesa = filtrarDados(filtro_ano, filtro_mes);
+            if (filtro_categoria !== "") {
+                filtro_despesa = filtro_despesa.filter(item => item.categoria === filtro_categoria);
+            }
             var labels1 = filtro_despesa.map(item => item.categoria);
             var values1 = filtro_despesa.map(item => item.valor);
-            var colors1 = ['red', 'green', 'blue', 'orange', 'purple', 'yellow', 'pink', 'gray', 'brown', 'black', 'white', 'turquoise', 'violet'];
+            var colors1 = ['red', 'green', 'blue', 'orange', 'purple', 'pink', 'gray', 'brown', 'black', 'white', 'turquoise', 'violet'];
 
-            var data1 = [{
-                type: 'pie',
-                labels: labels1,
-                values: values1,
-                marker: {
-                    colors: colors1
-                }
-            }];
+            var data1 = new google.visualization.DataTable();
+            data1.addColumn('string', 'Categoria');
+            data1.addColumn('number', 'Valor');
+            data1.addRows(labels1.length);
+            for (var i = 0; i < labels1.length; i++) {
+                data1.setValue(i, 0, labels1[i]);
+                data1.setValue(i, 1, values1[i]);
+            }
 
-            var layout1 = {
+            var options1 = {
                 title: 'Total por Categoria',
-                showlegend: true,
-                legend: {
-                    x: 1,
-                    y: 0,
-                    traceorder: 'normal',
-                    font: {
-                        family: 'sans-serif',
-                        size: 12,
-                        color: '#000'
-                    },
-                    bgcolor: '#E2E2E2',
-                    bordercolor: '#FFFFFF',
-                    borderwidth: 2
-                }
+                colors: colors1,
+                legend: { position: 'right', textStyle: { fontSize: 12 } }
             };
 
-            Plotly.newPlot('chart1', data1, layout1);
+            var chart1 = new google.visualization.PieChart(document.getElementById('chart1'));
+            chart1.draw(data1, options1);
         }
 
-        function gerarGrafico2(filtro_ano, filtro_mes) {
+        function gerarGrafico2(filtro_ano, filtro_mes, filtro_categoria) {
             var filtro1_despesa = filtrarDados(filtro_ano, filtro_mes);
+            if (filtro_categoria !== "") {
+                filtro1_despesa = filtro1_despesa.filter(item => item.categoria === filtro_categoria);
+            }
 
             // Agrupar os valores por dia e calcular a soma de cada grupo
             var valoresPorDia = filtro1_despesa.reduce(function(result, item) {
@@ -111,113 +137,163 @@
             var labels2 = Object.keys(valoresPorDia);
             var values2 = Object.values(valoresPorDia);
 
-            var data2 = [{
-                x: labels2,
-                y: values2,
-                type: 'bar',
-                marker: {
-                color: 'blue'
-                }
-            }];
+            var data2 = new google.visualization.DataTable();
+            data2.addColumn('string', 'Dia');
+            data2.addColumn('number', 'Valor');
+            data2.addRows(labels2.length);
+            for (var i = 0; i < labels2.length; i++) {
+                data2.setValue(i, 0, labels2[i]);
+                data2.setValue(i, 1, values2[i]);
+            }
 
-            var layout2 = {
-                title: 'Total por Dia'
+            var options2 = {
+                title: 'Total por Dia',
+                colors: ['blue'],
+                legend: { position: 'none' }
             };
 
-            Plotly.newPlot('chart2', data2, layout2);
+            var chart2 = new google.visualization.BarChart(document.getElementById('chart2'));
+            chart2.draw(data2, options2);
+        }
+
+        function gerarGrafico3(filtro_ano, filtro_mes, filtro_categoria) {
+            var filtro3_despesa = despesas;
+
+            // Filtrar os dados do ano atual
+            var despesasAnoAtual = filtro3_despesa.filter(item => item.ano === filtro_ano);
+            if (filtro_categoria !== "") {
+                despesasAnoAtual = despesasAnoAtual.filter(item => item.categoria === filtro_categoria);
             }
 
+            // Agrupar os valores por mês e calcular a soma de cada grupo para o ano atual
+            var valoresPorMesAtual = despesasAnoAtual.reduce(function(result, item) {
+                var anomes = item.anomes;
+                var valor = item.valor;
 
-            function gerarGrafico3(filtro_ano, filtro_mes) {
-                var filtro3_despesa = despesas;
+                if (!result[anomes]) {
+                    result[anomes] = 0;
+                }
 
-                // Filtrar os dados do ano atual
-                var despesasAnoAtual = filtro3_despesa.filter(item => item.ano === filtro_ano);
+                result[anomes] += valor;
 
-                // Agrupar os valores por mês e calcular a soma de cada grupo para o ano atual
-                var valoresPorMesAtual = despesasAnoAtual.reduce(function(result, item) {
-                    var anomes = item.anomes;
-                    var valor = item.valor;
+                return result;
+            }, {});
 
-                    if (!result[anomes]) {
-                        result[anomes] = 0;
-                    }
+            var labels3 = Object.keys(valoresPorMesAtual);
+            var values3Atual = Object.values(valoresPorMesAtual);
 
-                    result[anomes] += valor;
-
-                    return result;
-                }, {});
-
-                var labels3 = Object.keys(valoresPorMesAtual);
-                var values3Atual = Object.values(valoresPorMesAtual);
-
-                var data3 = [{
-                    x: labels3,
-                    y: values3Atual,
-                    name: 'Ano Atual',
-                    type: 'bar',
-                    marker: {
-                        color: 'blue'
-                    }
-                }];
-
-                var layout3 = {
-                    title: 'Total por Mês',
-                    xaxis: {
-                        title: 'Ano-Mês',
-                        tickformat: 'a' // Formato para exibir ano-mês completo
-                    }
-                };
-
-                Plotly.newPlot('chart3', data3, layout3);
+            var data3 = new google.visualization.DataTable();
+            data3.addColumn('string', 'Ano-Mês');
+            data3.addColumn('number', 'Valor');
+            data3.addRows(labels3.length);
+            for (var i = 0; i < labels3.length; i++) {
+                data3.setValue(i, 0, labels3[i]);
+                data3.setValue(i, 1, values3Atual[i]);
             }
 
+            var options3 = {
+                title: 'Total por Mês',
+                colors: ['blue'],
+                legend: { position: 'none' },
+                hAxis: { title: 'Ano-Mês', format: 'a' }
+            };
 
+            var chart3 = new google.visualization.ColumnChart(document.getElementById('chart3'));
+            chart3.draw(data3, options3);
+        }
 
         // Titula com detalhes
-        // Aplicar filtro de mês selecionado e somar campo "valor"
-        function gerarDetalhesMes(filtro_ano, filtro_mes){
+        // Aplicar filtro de mês e categoria selecionados e somar campo "valor"
+        function gerarDetalhesMes(filtro_ano, filtro_mes, filtro_categoria){
             var filtroTitulo_despesa = filtrarDados(filtro_ano, filtro_mes);
             var filtroTituloCredito_despesa = filtrarDadosCredito(filtro_ano, filtro_mes);
 
-            
+            if (filtro_categoria !== "") {
+                filtroTitulo_despesa = filtroTitulo_despesa.filter(item => item.categoria === filtro_categoria);
+                filtroTituloCredito_despesa = filtroTituloCredito_despesa.filter(item => item.categoria === filtro_categoria);
+            }
+
             var gastoTotal = filtroTitulo_despesa.reduce((total, item) => total + item.valor, 0);
             var creditoTotal = filtroTituloCredito_despesa.reduce((total, item) => total + item.valor, 0);
 
             document.getElementById('numero_mes').textContent = filtro_mes;
             document.getElementById('gasto_mes').textContent = gastoTotal;
             document.getElementById('credito_mes').textContent = creditoTotal;
-            document.getElementById('saldo_mes').textContent = creditoTotal - gastoTotal ;
+            document.getElementById('saldo_mes').textContent = creditoTotal - gastoTotal;
+        }
 
+        // função para deixar disponivel apenas o item selecionado
+        function atualizarFiltroMeses(anoSelecionado) {
+            var mesesDisponiveis = despesas
+                .filter(item => item.ano === anoSelecionado)
+                .map(item => item.mes)
+                .filter((value, index, self) => self.indexOf(value) === index);
+
+            mesSelecionado.innerHTML = '';
+            for (const mes of mesesDisponiveis) {
+                var option = document.createElement('option');
+                option.value = mes;
+                option.text = mes;
+                mesSelecionado.appendChild(option);
+            }
+        }
+
+        function atualizarFiltroCategorias(anoSelecionado, mesSelecionado) {
+            var categoriasDisponiveis = despesas
+                .filter(item => item.ano === anoSelecionado && item.mes === mesSelecionado)
+                .map(item => item.categoria)
+                .filter((value, index, self) => self.indexOf(value) === index);
+
+            categoriaSelecionada.innerHTML = '<option> </option>';
+            for (const categoria of categoriasDisponiveis) {
+                var option = document.createElement('option');
+                option.value = categoria;
+                option.text = categoria;
+                categoriaSelecionada.appendChild(option);
+            }
         }
 
         var anoSelecionado = document.getElementById('ano_select');
         var mesSelecionado = document.getElementById('mes_select');
+        var categoriaSelecionada = document.getElementById('categoria_select');
 
-        gerarGrafico1(anoSelecionado.value,mesSelecionado.value);
-        gerarGrafico2(anoSelecionado.value,mesSelecionado.value);
-        gerarGrafico3(anoSelecionado.value,mesSelecionado.value);
-        gerarDetalhesMes(anoSelecionado.value,mesSelecionado.value)
+        atualizarFiltroMeses(anoSelecionado.value);
+        atualizarFiltroCategorias(anoSelecionado.value, mesSelecionado.value);
+        gerarGrafico1(anoSelecionado.value, mesSelecionado.value, categoriaSelecionada.value);
+        gerarGrafico2(anoSelecionado.value, mesSelecionado.value, categoriaSelecionada.value);
+        gerarGrafico3(anoSelecionado.value, mesSelecionado.value, categoriaSelecionada.value);
+        gerarDetalhesMes(anoSelecionado.value, mesSelecionado.value, categoriaSelecionada.value);
+        
 
         anoSelecionado.addEventListener('change', function() {
             var tipoAno_select = anoSelecionado.value;
             var tipoMes_select = mesSelecionado.value;
-            gerarGrafico1(tipoAno_select, tipoMes_select);
-            gerarGrafico2(tipoAno_select, tipoMes_select);
-            gerarGrafico3(tipoAno_select, tipoMes_select);
-            gerarDetalhesMes(tipoAno_select,tipoMes_select)
-
-
+            gerarGrafico1(tipoAno_select, tipoMes_select, categoriaSelecionada.value);
+            gerarGrafico2(tipoAno_select, tipoMes_select, categoriaSelecionada.value);
+            gerarGrafico3(tipoAno_select, tipoMes_select, categoriaSelecionada.value);
+            gerarDetalhesMes(tipoAno_select, tipoMes_select, categoriaSelecionada.value);
+            atualizarFiltroMeses(tipoAno_select);
+            
         });
 
         mesSelecionado.addEventListener('change', function() {
             var tipoAno_select = anoSelecionado.value;
             var tipoMes_select = mesSelecionado.value;
-            gerarGrafico1(tipoAno_select, tipoMes_select);
-            gerarGrafico2(tipoAno_select, tipoMes_select);
-            gerarGrafico3(tipoAno_select, tipoMes_select);
-            gerarDetalhesMes(tipoAno_select,tipoMes_select)
+            gerarGrafico1(tipoAno_select, tipoMes_select, categoriaSelecionada.value);
+            gerarGrafico2(tipoAno_select, tipoMes_select, categoriaSelecionada.value);
+            gerarGrafico3(tipoAno_select, tipoMes_select, categoriaSelecionada.value);
+            gerarDetalhesMes(tipoAno_select, tipoMes_select, categoriaSelecionada.value);
+            atualizarFiltroCategorias(tipoAno_select, tipoMes_select);
 
+        });
+
+        categoriaSelecionada.addEventListener('change', function() {
+            var tipoAno_select = anoSelecionado.value;
+            var tipoMes_select = mesSelecionado.value;
+            gerarGrafico1(tipoAno_select, tipoMes_select, categoriaSelecionada.value);
+            gerarGrafico2(tipoAno_select, tipoMes_select, categoriaSelecionada.value);
+            gerarGrafico3(tipoAno_select, tipoMes_select, categoriaSelecionada.value);
+            gerarDetalhesMes(tipoAno_select, tipoMes_select, categoriaSelecionada.value);
         });
     }
 </script>
