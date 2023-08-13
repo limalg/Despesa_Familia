@@ -88,22 +88,33 @@
 
         function gerarGrafico1(filtro_ano, filtro_mes, filtro_categoria) {
             var filtro_despesa = filtrarDados(filtro_ano, filtro_mes);
+            
+            var labels1 = [];
+            var values1 = {};
+            
             if (filtro_categoria !== "") {
                 filtro_despesa = filtro_despesa.filter(item => item.categoria === filtro_categoria);
             }
-            var labels1 = filtro_despesa.map(item => item.categoria);
-            var values1 = filtro_despesa.map(item => item.valor);
-            var colors1 = ['red', 'green', 'blue', 'orange', 'purple', 'pink', 'gray', 'brown', 'black', 'white', 'turquoise', 'violet'];
-
+            
+            filtro_despesa.forEach(function(item) {
+                if (labels1.indexOf(item.categoria) === -1) {
+                    labels1.push(item.categoria);
+                    values1[item.categoria] = item.valor;
+                } else {
+                    values1[item.categoria] += item.valor;
+                }
+            });
+            
             var data1 = new google.visualization.DataTable();
             data1.addColumn('string', 'Categoria');
             data1.addColumn('number', 'Valor');
-            data1.addRows(labels1.length);
-            for (var i = 0; i < labels1.length; i++) {
-                data1.setValue(i, 0, labels1[i]);
-                data1.setValue(i, 1, values1[i]);
-            }
+            
+            labels1.forEach(function(categoria, index) {
+                data1.addRow([categoria, values1[categoria]]);
+            });
 
+            var colors1 = ['red', 'green', 'blue', 'orange', 'purple', 'pink', 'gray', 'brown', 'black', 'turquoise', 'violet'];
+            
             var options1 = {
                 title: 'Total por Categoria',
                 colors: colors1,
@@ -113,6 +124,7 @@
             var chart1 = new google.visualization.PieChart(document.getElementById('chart1'));
             chart1.draw(data1, options1);
         }
+
 
         function gerarGrafico2(filtro_ano, filtro_mes, filtro_categoria) {
             var filtro1_despesa = filtrarDados(filtro_ano, filtro_mes);
@@ -126,7 +138,7 @@
                 var valor = item.valor;
 
                 if (!result[dia]) {
-                result[dia] = 0;
+                    result[dia] = 0;
                 }
 
                 result[dia] += valor;
@@ -134,8 +146,13 @@
                 return result;
             }, {});
 
-            var labels2 = Object.keys(valoresPorDia);
-            var values2 = Object.values(valoresPorDia);
+            // Ordenar os valores do maior para o menor
+            var sortedValoresPorDia = Object.fromEntries(
+                Object.entries(valoresPorDia).sort(([, a], [, b]) => b - a)
+            );
+
+            var labels2 = Object.keys(sortedValoresPorDia);
+            var values2 = Object.values(sortedValoresPorDia);
 
             var data2 = new google.visualization.DataTable();
             data2.addColumn('string', 'Dia');
