@@ -38,13 +38,13 @@ categorias = [
 ]
 
 config = {
-            "apiKey": "AIzaSyB6CP8UVIEfifzmXvPepPlZShRIaJa6CL4",
-            "authDomain": "limalg_familia.firebaseapp.com",
-            "databaseURL": "https://casa-9085b-default-rtdb.firebaseio.com",
-            "projectId": "casa-9085b",
-            "storageBucket": "casa-9085b.appspot.com",
+            "apiKey": "",
+            "authDomain": "",
+            "databaseURL": "",
+            "projectId": "",
+            "storageBucket": "",
             "messagingSenderId": "SEU_SENDER_ID",
-            "appId": "1:128158421861:android:56fe3df9216c7d0b71078c"
+            "appId": ""
 }
 
 firebase = pyrebase.initialize_app(config)
