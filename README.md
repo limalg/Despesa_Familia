@@ -20,7 +20,7 @@ Um aplicativo web simples para rastrear despesas pessoais usando o framework Fla
 
 ```bash
 git clone https://github.com/SEU_USUARIO/NOME_DO_REPOSITORIO.git
-cd NOME_DO_REPOSITORIO
+cd NOME_DO_REPOSITORIO ```
 
 
 ## Contribuição
