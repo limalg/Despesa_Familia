@@ -5,7 +5,7 @@ Um aplicativo web simples para rastrear despesas pessoais usando o framework Fla
 ## Funcionalidades
 
 - Autenticação de usuários
-- Adição, edição e exclusão de despesas
+- Adição, edição e exclusão de despesas (CRUD)
 - Visualização de despesas em um painel de controle
 
 ## Pré-requisitos
