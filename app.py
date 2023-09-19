@@ -5,6 +5,7 @@ import pandas as pd
 import pyrebase
 from functools import wraps
 import os
+import json
 
 app = Flask(__name__)
 
@@ -37,17 +38,24 @@ categorias = [
 
 ]
 
-config = {
-            "apiKey": "",
-            "authDomain": "",
-            "databaseURL": "",
-            "projectId": "",
-            "storageBucket": "",
-            "messagingSenderId": "SEU_SENDER_ID",
-            "appId": ""
+
+# Carregue as configurações do Firebase do arquivo JSON local
+with open('firebase_config.json', 'r') as config_file:
+    config = json.load(config_file)
+
+# Configurações do Firebase
+firebase_config = {
+    "apiKey": config["apiKey"],
+    "authDomain": config["authDomain"],
+    "databaseURL": config["databaseURL"],
+    "projectId": config["projectId"],
+    "storageBucket": config["storageBucket"],
+    "messagingSenderId": config["messagingSenderId"],
+    "appId": config["appId"]
 }
 
-firebase = pyrebase.initialize_app(config)
+# Inicialize o Firebase com as configurações carregadas
+firebase = pyrebase.initialize_app(firebase_config)
 auth = firebase.auth()
 db = firebase.database()
 
