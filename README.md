@@ -10,7 +10,7 @@ Um aplicativo web simples para rastrear despesas pessoais usando o framework Fla
 
 ## Pré-requisitos
 
-- Python 3.x
+- Python 3.10.10
 - Bibliotecas Python listadas em `requirements.txt`
 - Conta no Firebase com as credenciais necessárias
 
