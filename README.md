@@ -13,6 +13,7 @@ Um aplicativo web simples para rastrear despesas pessoais usando o framework Fla
 - Python 3.10.10
 - Bibliotecas Python listadas em `requirements.txt`
 - Conta no Firebase com as credenciais necessárias
+- Arquivo firebase_config.json com as informações para acesso ao firebase realtime database
 
 ## Contribuição
 Contribuições são bem-vindas! Sinta-se à vontade para abrir uma issue ou enviar um pull request.
