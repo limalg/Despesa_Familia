@@ -199,7 +199,12 @@ def delete(id):
 @app.route('/dashboard')
 @isAuthenticated
 def dashboard():
-    despesas = retrieve_records_month() 
+    #despesas = retrieve_records_month() 
+    despesas = records_month_atual()
+        # Adicione uma nova coluna 'Despesa Fixa' com base nas categorias especificadas
+    categorias_despesa_fixa = ['Alimentação','Gas','Internet', 'Aluguel', 'Condomínio', 'Faxina', 'Investimento Foz', 'Luz', 'Seguro contra incêndio']
+    despesas['despesa_fixa'] = despesas['categoria'].apply(lambda x: 'Sim' if x in categorias_despesa_fixa else 'Não')
+    despesas['data'] = despesas['data'].dt.strftime('%Y-%m-%d 15:00')
     return render_template('dashboard.html', despesas=despesas)
 
 
@@ -300,9 +305,9 @@ def records_month_atual():
         df['dia'] = df['data'].dt.strftime('%d')
         df['valor'] = df['valor'].astype(float)
         #df['dia'] = df['dia'].astype('int')
-        current_month = pd.to_datetime('today').strftime('%Y%m')
-        df = df.loc[df['anomes'] == current_month]
-        df = df.reset_index(drop=True)
+        #current_month = pd.to_datetime('today').strftime('%Y%m')
+        #df = df.loc[df['anomes'] == current_month]
+        #df = df.reset_index(drop=True)
         #print(df)
         return df
     else:
@@ -313,4 +318,5 @@ def records_month_atual():
 if __name__ == '__main__':
     #app.run(debug=True)
     app.run(host='0.0.0.0')
+    
 
