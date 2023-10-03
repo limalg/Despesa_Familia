@@ -218,7 +218,6 @@ def create_record(data):
     response = db.child("despesa").push(data,token=session['usr'])
     record_id = response['name']
     update_record(record_id, {'id': record_id})
-    print('Novo registro criado com sucesso.')
 
 
 # Função para recuperar todos os registros
@@ -227,7 +226,6 @@ def retrieve_records():
     if response.val().keys():
         return list(response.val().values())
     else:
-        print('Erro ao recuperar registros.')
         return []
 
 
@@ -237,20 +235,17 @@ def retrieve_record(id):
     if response.val():
         return response.val()
     else:
-        print(f'Erro ao recuperar registro com o ID {id}.')
         return None
 
 
 # Função para atualizar um registro
 def update_record(id, data):
     db.child("despesa").child(id).update(data,token=session['usr'])
-    print(f'Registro com o ID {id} atualizado com sucesso.')
 
 
 # Função para excluir um registro
 def delete_record(id):
     db.child("despesa").child(id).remove(token=session['usr'])
-    print(f'Registro com o ID {id} excluído com sucesso.')
 
 
 # Função para recuperar os registros do Mês Atual
@@ -316,7 +311,7 @@ def records_month_atual():
 
 
 if __name__ == '__main__':
-    #app.run(debug=True)
-    app.run(host='0.0.0.0')
+    app.run(debug=True)
+    #app.run(host='0.0.0.0')
     
 
