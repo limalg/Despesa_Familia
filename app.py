@@ -215,7 +215,7 @@ def dashboard():
 
 # Função para criar um novo registro
 def create_record(data):
-    response = db.child("despesa").push(data)
+    response = db.child("despesa").push(data,token=session['usr'])
     record_id = response['name']
     update_record(record_id, {'id': record_id})
     print('Novo registro criado com sucesso.')
@@ -223,7 +223,7 @@ def create_record(data):
 
 # Função para recuperar todos os registros
 def retrieve_records():
-    response = db.child("despesa").get()
+    response = db.child("despesa").get(token=session['usr'])
     if response.val().keys():
         return list(response.val().values())
     else:
@@ -233,7 +233,7 @@ def retrieve_records():
 
 # Função para recuperar um registro específico
 def retrieve_record(id):
-    response = db.child("despesa").child(id).get()
+    response = db.child("despesa").child(id).get(token=session['usr'])
     if response.val():
         return response.val()
     else:
@@ -243,19 +243,19 @@ def retrieve_record(id):
 
 # Função para atualizar um registro
 def update_record(id, data):
-    db.child("despesa").child(id).update(data)
+    db.child("despesa").child(id).update(data,token=session['usr'])
     print(f'Registro com o ID {id} atualizado com sucesso.')
 
 
 # Função para excluir um registro
 def delete_record(id):
-    db.child("despesa").child(id).remove()
+    db.child("despesa").child(id).remove(token=session['usr'])
     print(f'Registro com o ID {id} excluído com sucesso.')
 
 
 # Função para recuperar os registros do Mês Atual
 def retrieve_records_month():
-    response = db.child("despesa").get()
+    response = db.child("despesa").get(token=session['usr'])
     if response.val():
         data = response.val()
         df = pd.DataFrame(data)
@@ -293,7 +293,7 @@ def retrieve_records_month():
 
 # Função para recuperar os registros do Mês Atual (versão do autor)
 def records_month_atual():
-    response = db.child("despesa").get()
+    response = db.child("despesa").get(token=session['usr'])
     if response.val():
         data = response.val()
         df = pd.DataFrame(data)
