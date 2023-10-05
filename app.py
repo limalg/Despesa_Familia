@@ -207,6 +207,16 @@ def dashboard():
     despesas['data'] = despesas['data'].dt.strftime('%Y-%m-%d 15:00')
     return render_template('dashboard.html', despesas=despesas)
 
+@app.route('/painel')
+@isAuthenticated
+def painel():
+    #despesas = retrieve_records_month() 
+    despesas = records_month_atual()
+        # Adicione uma nova coluna 'Despesa Fixa' com base nas categorias especificadas
+    categorias_despesa_fixa = ['Alimentação','Gas','Internet', 'Aluguel', 'Condomínio', 'Faxina', 'Investimento Foz', 'Luz', 'Seguro contra incêndio']
+    despesas['despesa_fixa'] = despesas['categoria'].apply(lambda x: 'Sim' if x in categorias_despesa_fixa else 'Não')
+    despesas['data'] = despesas['data'].dt.strftime('%Y-%m-%d 15:00')
+    return render_template('painel.html', despesas=despesas)
 
 ######################################################
 # Funções auxiliares
