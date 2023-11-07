@@ -1,11 +1,16 @@
 {% extends 'base.html' %}
 {% block body %}
-<div id="dashboard_div" style="display: flex;">
+
+<div id="dashboard_div" style="display: flex;" >
     <div id="control_ano" style="flex: 1;"></div>
+    <div id="control_usuario" style="flex: 1;"></div>
     <div id="control_despesa_fixa" style="flex: 1;"></div>
     <div id="control_categoria" style="flex: 1;"></div>
 </div>
-<div id="chart_div" style="margin-top: 10px;"></div>
+<div class="row">
+    <div class="col-sm" id="chart_div1" style=" margin-right: 10px;"></div>
+    <div class="col-sm" id="chart_div" style=" margin-top: 10px;"></div>
+</div>
 
 
 <!-- Carregue a API de Visualização do Google e os pacotes 'controls' e 'table' -->
@@ -15,10 +20,13 @@
     // Configure um retorno de chamada para ser executado quando a API de Visualização do Google for carregada.
     google.charts.setOnLoadCallback(drawDashboard);
 
-    // Função para obter o ano atual
-    function getAnoAtual() {
+    // Function to get the current AnoMes
+    function getAnoMesAtual() {
         var dataAtual = new Date();
-        return dataAtual.getFullYear().toString();
+        var ano = dataAtual.getFullYear();
+        var mes = dataAtual.getMonth() + 1;
+        var anoMes = ano + '-' + (mes < 10 ? '0' : '') + mes; // Format as 'YYYY-MM'
+        return anoMes;
     }
 
     // Função de retorno de chamada que cria e preenche uma tabela de dados com controles interativos de seleção de ano e categoria, e desenha o painel.
@@ -27,10 +35,11 @@
 
         // Crie um objeto de dados da tabela
         var data = new google.visualization.DataTable();
-        data.addColumn('string', 'Ano');
+        data.addColumn('string', 'AnoMes');
         data.addColumn('date', 'Data');  // Alterado para o tipo 'date'
         data.addColumn('string', 'Categoria');
         data.addColumn('string', 'Descrição');
+        data.addColumn('string', 'Usuário');
         data.addColumn('string', 'Pagamento');
         data.addColumn('string', 'Despesa Fixa?');
         data.addColumn('number', 'Valor');
@@ -38,23 +47,43 @@
         // Dentro do loop que preenche a tabela
         despesas.forEach(function(item) {
             var dataFormatada = new Date(item.data);
-            data.addRow([item.ano, dataFormatada, item.categoria, item.descricao, item.pagamento, item.despesa_fixa, item.valor]);
+            var anoMes = dataFormatada.getFullYear() + '-' + ('0' + (dataFormatada.getMonth() + 1)).slice(-2);
+            data.addRow([anoMes, dataFormatada, item.categoria, item.descricao, item.usuario, item.pagamento, item.despesa_fixa, item.valor]);
         });
+
 
         // Crie um painel de controle para a seleção de ano
         var controlAno = new google.visualization.ControlWrapper({
             'controlType': 'CategoryFilter',
             'containerId': 'control_ano',
             'options': {
-                'filterColumnLabel': 'Ano',
+                'filterColumnLabel': 'AnoMes', // Update this line
                 'ui': {
                     'labelStacking': 'vertical',
-                    'label': 'Escolha o Ano:',
+                    'label': 'Escolha o Ano e Mês:', // Update the label
                     'allowTyping': false,
                     'allowNone': false,
                 }
             }
         });
+        // Set the default value for controlAno to the current AnoMes
+        controlAno.setState({'selectedValues': [getAnoMesAtual()]});
+       
+        // Crie um painel de controle para a seleção de usuário
+        var controlUsuario = new google.visualization.ControlWrapper({
+            'controlType': 'CategoryFilter',
+            'containerId': 'control_usuario',
+            'options': {
+                'filterColumnLabel': 'Usuário',
+                'ui': {
+                    'labelStacking': 'vertical',
+                    'label': 'Selecione um Usuário:',
+                    'allowTyping': false,
+                    'allowNone': true,
+                }
+            }
+        });
+
 
         // Crie um painel de controle para a seleção de despesa fixa
         var controlDespesaFixa = new google.visualization.ControlWrapper({
@@ -66,14 +95,10 @@
                     'labelStacking': 'vertical',
                     'label': 'Despesa Fixa?',
                     'allowTyping': false,
-                    'allowNone': false,
+                    'allowNone': true,
                 },
-                // Defina as opções "Sim" e "Não" como selecionadas por padrão
-                'selectedValues': [ 'Não','Sim']
             }
-        });
-        // Defina "Sim" como opção padrão
-        controlDespesaFixa.setState({'selectedValues': ['Sim']});   
+        });  
 
         // Crie um painel de controle para a seleção de categoria
         var controlCategoria = new google.visualization.ControlWrapper({
@@ -85,12 +110,13 @@
                     'labelStacking': 'vertical',
                     'label': 'Selecione uma Categoria:',
                     'allowTyping': false,
-                    'allowNone': false,
+                    'allowNone': true,
                 }
             }
         });
 
-        // Crie um objeto de tabela e defina as opções
+
+        // Create a table chart and set the view as its data source
         var table = new google.visualization.ChartWrapper({
             'chartType': 'Table',
             'containerId': 'chart_div',
@@ -98,18 +124,40 @@
                 'showRowNumber': true,
                 'width': '100%',
                 'height': '100%'
+            },
+            'view': {'columns': [1,2,3,4,5, 7]}
+        });
+
+
+        // Create a dashboard that links the controls to the table
+        var dashboard = new google.visualization.Dashboard(document.getElementById('dashboard_div'));
+        dashboard.bind([controlAno, controlUsuario, controlDespesaFixa, controlCategoria], table);
+
+        // Draw the dashboard
+        dashboard.draw(data);
+
+
+        // Create a DataView for aggregation
+        var view = new google.visualization.DataView(data);
+
+        // Define the aggregation using the DataUtil group method
+        var groupedData = google.visualization.data.group(view, [0,4], [{'column': 7, 'aggregation': google.visualization.data.sum, 'type': 'number'}]);
+
+        // Create a table chart for the grouped and summed data
+        var table_soma = new google.visualization.ChartWrapper({
+            'chartType': 'Table',
+            'containerId': 'chart_div1',
+            'options': {
+                'showRowNumber': true,
+                'width': '100%',
+                'height': '100%'
             }
         });
 
-        // Crie um dashboard que liga os controles à tabela
-        var dashboard = new google.visualization.Dashboard(document.getElementById('dashboard_div'));
-        dashboard.bind([controlAno, controlDespesaFixa, controlCategoria], table);
+        // Draw the table chart with the grouped and summed data
+        table_soma.setDataTable(groupedData);
+        table_soma.draw();
 
-        // Desenhe o painel
-        dashboard.draw(data);
-
-        // Defina o ano atual como padrão após o dashboard ser desenhado
-        controlAno.setState({'selectedValues': [getAnoAtual()]});
     }
 </script>
 {% endblock %}
